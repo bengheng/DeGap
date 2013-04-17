@@ -1,0 +1,6 @@
+Description
+===========
+
+The QEGenerator is used for generating query scripts. It is currently
+non-functional as the database schema has changed. However, the basic idea
+should remain unchanged, thus I've included it for future reference.

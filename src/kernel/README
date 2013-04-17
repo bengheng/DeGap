@@ -1,0 +1,4 @@
+Place the source files in the kernel directory of the linux sources, e.g.
+/linux-source-2.6.32-modified/kernel/.
+
+Copy dedup.patch to the parent directory of the source and apply the patch.

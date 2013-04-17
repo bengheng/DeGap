@@ -1,0 +1,98 @@
+Description
+===========
+
+DeGap is a tool that computes permission gaps. Its core uses a Python plugin
+framework and currently has three types of plugins implemented for Sshd, Auditd,
+and User Groups. The scripts are found in "scripts/DeGap/".
+
+For Sshd, DeGap uses authorization logs (commonly /var/log/auth.log*) to extract
+the SSH access information.
+
+For Auditd and User Groups, they use the same set of auditd logs. In addition,
+they require file metadata information. You can run
+"scripts/utils/get-file-stats.py" on the subject machine to extract the
+information. The script takes in a list of files, and outputs another file with
+the metadata containing the following information concatenated with '|'.
+1. Full path
+2. File extension
+3. Number of files in same directory with same extension (currently unused)
+4. File type
+5. Number of files in same directory with same type (currently unused)
+6. File mode
+7. File UID
+8. File GID
+
+There is also a patch in "src/kernel" that modifies auditd to remove duplicated
+auditd entries. Duplicated entries are those that have the same fields that are
+required for DeGap to function properly. Fields, such as timestamps, are not
+necessary. Removing duplicated entries is not really necessarily for DeGap to
+work, but rather for performance improvements.
+
+For User Groups, DeGap also requires the "/etc/passwd" and "/etc/group" files from
+the target machine.
+
+Please read the accompanying paper for more information. Note that the tables in
+the database may differ. For example, Principal in the database corresponds to
+Subject, Operation corresponds to Right, and Resource corresponds to Object.
+
+
+Prerequisites
+=============
+
+I try to list some of the prerequisites that I had to install for my system.
+However, your system may have other required components missing.
+
+1. Python 2.7.3 with pyparsing
+2. libaudit-dev
+
+
+Examples
+========
+
+[SSHD]
+Pre-requisites from target machine:
+a. Authorization log files placed in "test/sshd/authlogs/".
+b. SSHD configuration file, sshd_config, placed in "test/sshd/".
+
+1. Change directory to "test/sshd".
+   > cd test/sshd/
+
+2. Extract only SSHD log records from authorization log files into sshd.log.
+   > grep -h "sshd\[[0-9]*\]" authlogs/* > sshd.log
+
+3. Make sure the value for inlog in config.ini is sshd.log.
+
+4. Use DeGap to parse logs. May take a while.
+   > ../../scripts/Degap.py parse-logs
+
+5. Use DeGap to load configurations from sshd_config (original target SSHD
+   configuration file, e.g. /etc/ssh/sshd_config).
+   > ./Degap.py load-configs
+
+6. Use DeGap to compute granted permissions.
+   > ./Degap.py compute-grperms
+
+7. Use DeGap to automatically restrict permissions.
+   > ./Degap.py restrict-auto
+
+
+
+Licensing
+=========
+
+  This program is released under the terms of the GNU General Public
+  License (GNU GPL).
+
+  You can find a copy of the license in the file COPYING.
+
+
+Contact
+=======
+
+For any questions or feedbacks, please contact:
+Beng Heng Ng (bengheng@gmail.com)
+Atul Prakash (aprakash@eecs.umich.edu)
+
+We value all feedback and will try to answer your queries. However, we seek your
+understanding that sometimes, due to resource constraints, our replies may take
+longer than we would prefer.

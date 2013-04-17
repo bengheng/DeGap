@@ -1,0 +1,95 @@
+*** ./linux-source-2.6.32/kernel/auditsc.c	Wed Dec  2 22:51:21 2009
+--- ./linux-source-2.6.32-modified/kernel/auditsc.c	Sun Sep 23 15:45:29 2012
+***************
+*** 1311,1316 ****
+--- 1311,1318 ----
+    audit_log_end(ab);
+  }
+  
++ extern bool dedup(struct audit_context *context, struct task_struct *tsk, gfp_t gfp_mask);
++ 
+  static void audit_log_exit(struct audit_context *context, struct task_struct *tsk)
+  {
+    const struct cred *cred;
+***************
+*** 1334,1339 ****
+--- 1336,1352 ----
+    context->fsgid = cred->fsgid;
+    context->personality = tsk->personality;
+  
++   // NBH: Do duplicity check here so that we don't have to
++   // allocate buffer if it is a duplicate. These are the fields
++   // we need for the different types.
++   // SYSCALL: syscall, success, exit, a1, a2, items, pid, uid,
++   //          gid, euid, suid, egid, sgid, comm, exe.
++   // CWD    : cwd
++   // PATH   : name, inode, mode, ouid, ogid
++   // EXECVE : <just its presence>
++   if (dedup( context, tsk, GFP_KERNEL ) == false)
++     return;
++ 
+    ab = audit_log_start(context, GFP_KERNEL, AUDIT_SYSCALL);
+    if (!ab)
+      return;		/* audit_panic has been called */
+*** ./linux-source-2.6.32/kernel/audit.c	Wed Dec  2 22:51:21 2009
+--- ./linux-source-2.6.32-modified/kernel/audit.c	Sun Sep 23 17:37:45 2012
+***************
+*** 959,964 ****
+--- 959,966 ----
+  	mutex_unlock(&audit_cmd_mutex);
+  }
+  
++ #include "dedup_shatree.h"
++ 
+  /* Initialize audit support at boot time. */
+  static int __init audit_init(void)
+  {
+***************
+*** 967,973 ****
+  	if (audit_initialized == AUDIT_DISABLED)
+  		return 0;
+  
+! 	printk(KERN_INFO "audit: initializing netlink socket (%s)\n",
+  	       audit_default ? "enabled" : "disabled");
+  	audit_sock = netlink_kernel_create(&init_net, NETLINK_AUDIT, 0,
+  					   audit_receive, NULL, THIS_MODULE);
+--- 969,975 ----
+  	if (audit_initialized == AUDIT_DISABLED)
+  		return 0;
+  
+! 	printk(KERN_INFO "audit: initializing netlink socket (%s) - watermarked by NBH\n",
+  	       audit_default ? "enabled" : "disabled");
+  	audit_sock = netlink_kernel_create(&init_net, NETLINK_AUDIT, 0,
+  					   audit_receive, NULL, THIS_MODULE);
+***************
+*** 982,987 ****
+--- 984,993 ----
+  	audit_enabled = audit_default;
+  	audit_ever_enabled |= !!audit_default;
+  
++   // NBH: Put dedup init here?
++   // TODO: So where do we put ddst_destroy()?
++   ddst_init();
++ 
+  	audit_log(NULL, GFP_KERNEL, AUDIT_KERNEL, "initialized");
+  
+  	for (i = 0; i < AUDIT_INODE_BUCKETS; i++)
+*** ./linux-source-2.6.32/kernel/Makefile	Wed Dec  2 22:51:21 2009
+--- ./linux-source-2.6.32-modified/kernel/Makefile	Sun Sep 23 16:56:39 2012
+***************
+*** 69,75 ****
+  obj-$(CONFIG_STOP_MACHINE) += stop_machine.o
+  obj-$(CONFIG_KPROBES_SANITY_TEST) += test_kprobes.o
+  obj-$(CONFIG_AUDIT) += audit.o auditfilter.o audit_watch.o
+! obj-$(CONFIG_AUDITSYSCALL) += auditsc.o
+  obj-$(CONFIG_GCOV_KERNEL) += gcov/
+  obj-$(CONFIG_AUDIT_TREE) += audit_tree.o
+  obj-$(CONFIG_KPROBES) += kprobes.o
+--- 69,75 ----
+  obj-$(CONFIG_STOP_MACHINE) += stop_machine.o
+  obj-$(CONFIG_KPROBES_SANITY_TEST) += test_kprobes.o
+  obj-$(CONFIG_AUDIT) += audit.o auditfilter.o audit_watch.o
+! obj-$(CONFIG_AUDITSYSCALL) += sha2.o dedup_shatree.o dedup.o auditsc.o
+  obj-$(CONFIG_GCOV_KERNEL) += gcov/
+  obj-$(CONFIG_AUDIT_TREE) += audit_tree.o
+  obj-$(CONFIG_KPROBES) += kprobes.o
