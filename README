@@ -49,6 +49,10 @@ However, your system may have other required components missing.
 Examples
 ========
 
+These examples by no means demonstrate all the capabilities of DeGap. Rather, it
+shows you how to quickly get DeGap up and running so that you can explore the
+other features.
+
 [SSHD]
 Pre-requisites from target machine:
 a. Authorization log files placed in "test/sshd/authlogs/".
@@ -65,15 +69,106 @@ b. SSHD configuration file, sshd_config, placed in "test/sshd/".
 4. Use DeGap to parse logs. May take a while.
    > ../../scripts/Degap.py parse-logs
 
-5. Use DeGap to load configurations from sshd_config (original target SSHD
-   configuration file, e.g. /etc/ssh/sshd_config).
-   > ./Degap.py load-configs
+5. Place "filenames.dat" and "scripts/utils/get-file-stats.py" onto the target
+   machine and run "get-file-stats.py". It takes "filenames.dat" as input and
+   generates "filemeta.dat". The file contains metadata information about files
+   accessed during the monitoring.
+   [on target machine]
+   > get-file-stats.py -i filenames.dat -o filemeta.dat
+
+   Copy "filemeta.dat" back to "test/auditd/". An example "filemeta.dat" is
+   included.
 
 6. Use DeGap to compute granted permissions.
-   > ./Degap.py compute-grperms
+   > ../../scripts/Degap.py compute-grperms
 
 7. Use DeGap to automatically restrict permissions.
-   > ./Degap.py restrict-auto
+   > ../../scripts/Degap.py restrict-auto
+
+
+[AUDITD]
+Pre-requisites from target machine:
+a. Auditd log files placed in "test/auditd/auditlogs/".
+
+1. Change directory to "src/auditd-parser/" and compile parser.
+   > make
+
+2. Change directory to "test/auditd/".
+   > cd ../../test/auditd/
+
+3. Copy sample "config-auditd.ini" to "config.ini".
+   > cp config-auditd.ini config.ini
+
+4. Run DeGap to parse logs and generate file "filenames.dat". Another file
+   "strhash.txt" mostly used for debugging purposes is also generated. This is
+   because strings are actually stored in their hashed forms and it gets really
+   hard to step through the code.
+   > ../../scripts/Degap.py parse-logs
+
+5. Place "filenames.dat" and "scripts/utils/get-file-stats.py" onto the target
+   machine and run "get-file-stats.py". It takes "filenames.dat" as input and
+   generates "filemeta.dat". The file contains metadata information about files
+   accessed during the monitoring.
+   [on target machine]
+   > get-file-stats.py -i filenames.dat -o filemeta.dat
+
+   Copy "filemeta.dat" back to "test/auditd/". An example "filemeta.dat" is
+   included.
+
+6. Use DeGap to load metadata.
+   > ../../scripts/Degap.py load-metadata
+
+7. Use DeGap to load configurations.
+   > ../../scripts/Degap.py load-configs
+
+8. Use DeGap to compute granted permissions.
+   > ../../scripts/Degap.py compute-grperms
+
+9. Use DeGap to automatically restrict permissions.
+   > ../../scripts/Degap.py restrict-auto
+
+
+[User Groups]
+Pre-requisites from target machine:
+a. "/etc/passwd" and "/etc/group" files. Examples are included.
+
+Note: Computing user group permission gaps makes use of auditd logs, so we need
+      to use the auditd plugin to parse the logs first. So, Steps 1 to 6 are
+      similar to that for auditd.
+
+1. Change directory to "src/auditd-parser/" and compile parser.
+   > make
+
+2. Change directory to "test/auditd/".
+   > cd ../../test/auditd/
+
+3. Copy sample "config-auditd.ini" to "config.ini".
+   > cp config-auditd.ini config.ini
+
+4. Run DeGap to parse logs and generate file "filenames.dat".
+   > ../../scripts/Degap.py parse-logs
+
+5. Place "filenames.dat" on target machine and run
+   "scripts/utils/get-file-stats.py" to generate "filemeta.dat". The file
+   contains metadata information about files accessed during the monitoring.
+   Copy "filemeta.dat" back to "test/auditd/". An example "filemeta.dat" is
+   included.
+
+6. Use DeGap to load metadata.
+   > ../../scripts/Degap.py load-metadata
+ 
+7. Copy sample "config-users.ini" to "config.ini". This will overwrite
+   the earlier config.ini.
+   > cp config-users.ini config.ini
+
+8. Use DeGap to load configurations.
+   > ../../scripts/Degap.py load-configs
+
+9. Use DeGap to compute granted permissions.
+   > ../../scripts/Degap.py compute-grperms
+
+10. Use DeGap to automatically restrict permissions.
+   > ../../scripts/Degap.py restrict-auto
 
 
 
